@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERMINAL 44</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --neon: #00ff41;
+    --neon-dim: #00cc33;
+    --neon-glow: #00ff4180;
+    --neon-deep: #003b00;
+    --dark: #0a0a0a;
+    --cabinet: #1a1a1a;
+    --cabinet-edge: #2a2a2a;
+    --cabinet-shadow: #000;
+    --screen-bg: #000800;
+    --scanline: rgba(0, 255, 65, 0.03);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--dark);
+    font-family: 'Share Tech Mono', monospace;
+    overflow-x: hidden;
+    color: var(--neon);
+  }
+
+  /* ── MATRIX RAIN CANVAS ── */
+  #matrix-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    opacity: 0.35;
+  }
+
+  /* ── PAGE WRAPPER ── */
+  .page-wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  /* ── TITLE ── */
+  .site-title {
+    font-family: 'VT323', monospace;
+    font-size: clamp(1.4rem, 4vw, 2.6rem);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--neon);
+    text-shadow:
+      0 0 7px var(--neon),
+      0 0 20px var(--neon-glow),
+      0 0 42px var(--neon-deep);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    animation: flicker 4s infinite alternate;
+  }
+
+  .site-title span {
+    color: #00ff4199;
+    font-size: 0.6em;
+    display: block;
+    letter-spacing: 0.5em;
+    margin-top: 0.2em;
+  }
+
+  /* ── ARCADE CABINET ── */
+  .cabinet {
+    position: relative;
+    width: clamp(320px, 70vw, 640px);
+    background: linear-gradient(180deg, #222 0%, #181818 40%, #111 100%);
+    border-radius: 18px 18px 8px 8px;
+    border: 2px solid #333;
+    box-shadow:
+      0 0 30px rgba(0,255,65,0.08),
+      0 20px 60px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    padding: 1.2rem 1.2rem 1.5rem;
+  }
+
+  /* Cabinet top bevel */
+  .cabinet::before {
+    content: '';
+    position: absolute;
+    top: -6px; left: 20px; right: 20px;
+    height: 6px;
+    background: linear-gradient(180deg, #3a3a3a, #222);
+    border-radius: 6px 6px 0 0;
+  }
+
+  /* ── MARQUEE ── */
+  .marquee {
+    text-align: center;
+    padding: 0.5rem 1rem 0.6rem;
+    font-family: 'VT323', monospace;
+    font-size: clamp(0.7rem, 2vw, 1rem);
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--neon-dim);
+    border-bottom: 1px solid #222;
+    margin-bottom: 0.8rem;
+    text-shadow: 0 0 6px var(--neon-glow);
+  }
+
+  /* ── SCREEN BEZEL ── */
+  .screen-bezel {
+    position: relative;
+    background: #0d0d0d;
+    border-radius: 10px;
+    padding: 10px;
+    border: 3px solid #2a2a2a;
+    box-shadow:
+      inset 0 0 30px rgba(0,0,0,0.9),
+      0 0 15px rgba(0,255,65,0.05);
+  }
+
+  /* ── CRT SCREEN ── */
+  .crt-screen {
+    position: relative;
+    background: var(--screen-bg);
+    border-radius: 6px;
+    overflow: hidden;
+    min-height: 400px;
+    cursor: pointer;
+    transition: box-shadow 0.3s;
+  }
+
+  .crt-screen:hover {
+    box-shadow: 0 0 25px rgba(0,255,65,0.12);
+  }
+
+  /* Scanlines */
+  .crt-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.15) 2px,
+      rgba(0, 0, 0, 0.15) 4px
+    );
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* CRT vignette / curvature */
+  .crt-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 60%,
+      rgba(0, 0, 0, 0.5) 100%
+    );
+    z-index: 11;
+    pointer-events: none;
+    border-radius: 6px;
+  }
+
+  /* Screen flicker overlay */
+  .screen-flicker {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    pointer-events: none;
+    animation: screenFlicker 0.15s infinite;
+    background: transparent;
+    border-radius: 6px;
+  }
+
+  /* ── SCREEN CONTENT ── */
+  .screen-content {
+    position: relative;
+    z-index: 5;
+    padding: 1.5rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(0.72rem, 1.5vw, 0.88rem);
+    line-height: 1.7;
+    color: var(--neon);
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen-content .prompt {
+    color: var(--neon-dim);
+    margin-bottom: 0.3rem;
+    opacity: 0;
+    animation: typeIn 0.05s forwards;
+  }
+
+  .screen-content .prompt::before {
+    content: '> ';
+    color: var(--neon);
+  }
+
+  .boot-line { opacity: 0; animation: typeIn 0.05s forwards; }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 0.6em;
+    height: 1.1em;
+    background: var(--neon);
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+  }
+
+  /* ── MENU LINKS ── */
+  .menu-section {
+    margin-top: 1.2rem;
+    border-top: 1px solid #003b0044;
+    padding-top: 1rem;
+  }
+
+  .menu-section .label {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: #00ff4166;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .menu-link {
+    display: block;
+    padding: 0.45rem 0.8rem;
+    margin-bottom: 0.3rem;
+    color: var(--neon);
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    transition: all 0.2s;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(0.72rem, 1.4vw, 0.85rem);
+    position: relative;
+  }
+
+  .menu-link::before {
+    content: '[ ';
+    color: var(--neon-dim);
+  }
+  .menu-link::after {
+    content: ' ]';
+    color: var(--neon-dim);
+  }
+
+  .menu-link:hover {
+    background: rgba(0, 255, 65, 0.07);
+    border-color: var(--neon-dim);
+    text-shadow: 0 0 8px var(--neon-glow);
+    padding-left: 1.4rem;
+  }
+
+  .menu-link .link-key {
+    color: #00ff41cc;
+    font-size: 0.65rem;
+    margin-left: 0.6rem;
+    opacity: 0.5;
+  }
+
+  .menu-link:hover .link-key {
+    opacity: 1;
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    margin-top: auto;
+    padding-top: 0.8rem;
+    border-top: 1px solid #003b0033;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: #00ff4155;
+    letter-spacing: 0.15em;
+  }
+
+  .status-bar .status-online {
+    color: var(--neon-dim);
+  }
+
+  .status-bar .status-online::before {
+    content: '●';
+    margin-right: 0.4em;
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  /* ── CABINET CONTROLS ── */
+  .cabinet-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    margin-top: 1rem;
+    padding-top: 0.6rem;
+  }
+
+  .cab-button {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    background: radial-gradient(circle at 35% 35%, #2a2a2a, #111);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .cab-button.red { border-color: #4a1111; background: radial-gradient(circle at 35% 35%, #3a1515, #1a0808); }
+  .cab-button.green { border-color: #114a11; background: radial-gradient(circle at 35% 35%, #153a15, #081a08); }
+  .cab-button.blue { border-color: #11114a; background: radial-gradient(circle at 35% 35%, #15153a, #08081a); }
+
+  /* ── COIN SLOT ── */
+  .coin-slot {
+    text-align: center;
+    margin-top: 0.8rem;
+    font-family: 'VT323', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: #00ff4133;
+  }
+
+  .coin-slot-graphic {
+    width: 50px;
+    height: 8px;
+    margin: 0.3rem auto;
+    background: #111;
+    border-radius: 4px;
+    border: 1px solid #2a2a2a;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+  }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: #00ff4122;
+    text-transform: uppercase;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  @keyframes typeIn {
+    to { opacity: 1; }
+  }
+
+  @keyframes flicker {
+    0%, 93%, 95%, 97%, 100% { opacity: 1; }
+    94% { opacity: 0.85; }
+    96% { opacity: 0.9; }
+  }
+
+  @keyframes screenFlicker {
+    0% { background: transparent; }
+    50% { background: rgba(0, 255, 65, 0.008); }
+    100% { background: transparent; }
+  }
+
+  @keyframes bootUp {
+    0% { opacity: 0; filter: brightness(0); }
+    30% { opacity: 1; filter: brightness(1.5); }
+    100% { opacity: 1; filter: brightness(1); }
+  }
+
+  .boot-anim {
+    animation: bootUp 1.5s ease-out forwards;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 500px) {
+    .cabinet {
+      width: 95vw;
+      padding: 0.8rem;
+      border-radius: 12px 12px 6px 6px;
+    }
+    .screen-content {
+      padding: 1rem;
+      min-height: 350px;
+    }
+    .site-title { letter-spacing: 0.15em; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<div class="page-wrapper">
+
+  <h1 class="site-title">TERMINAL 44</h1>
+
+  <div class="cabinet boot-anim">
+    <div class="marquee">/// SYSTEM ACTIVE — SELECT PROGRAM ///</div>
+
+    <div class="screen-bezel">
+      <div class="crt-screen" id="crt-screen">
+        <div class="screen-flicker"></div>
+        <div class="screen-content" id="screen-content">
+
+          <!-- Boot sequence — filled by JS -->
+          <div id="boot-area"></div>
+
+          <!-- Menu — revealed after boot -->
+          <div id="menu-area" style="display:none;">
+            <div class="prompt">SYSTEM ONLINE. WELCOME, OPERATOR.</div>
+            <div class="prompt" style="margin-bottom:0.6rem;">SELECT A PROGRAM TO EXECUTE:<span class="cursor-blink"></span></div>
+
+            <div class="menu-section">
+              <div class="label">— Programs —</div>
+
+              <a href="https://www.playdecadence.online/" class="menu-link" target="_blank">
+                DECADENCE — Pandemonium Card Engine
+                <span class="link-key">PLAY</span>
+              </a>
+
+              <a href="https://ichingv2.vercel.app/" class="menu-link" target="_blank">
+                I CHING — Divination Oracle
+                <span class="link-key">CAST</span>
+              </a>
+
+              <a href="https://apocalypse-nine.vercel.app/" class="menu-link" target="_blank">
+                APOCALYPSE SIMULATOR
+                <span class="link-key">RUN</span>
+              </a>
+
+              <a href="https://kataleimma.vercel.app/" class="menu-link" target="_blank">
+                KATALEIMMA — Sensory Residue System
+                <span class="link-key">OPEN</span>
+              </a>
+
+              <a href="https://archetypal-tarot.vercel.app/" class="menu-link" target="_blank">
+                ARCHETYPAL TAROT — Shadow Oracle
+                <span class="link-key">DRAW</span>
+              </a>
+
+              <a href="https://vercel.com/davids-projects-7d872788/memeplex" class="menu-link" target="_blank">
+                MEMEPLEX SIMULATOR — Agent Contagion
+                <span class="link-key">RUN</span>
+              </a>
+
+              <a href="https://saturnsimulator.vercel.app/" class="menu-link" target="_blank">
+                SATURN SIMULATOR
+                <span class="link-key">RUN</span>
+              </a>
+            </div>
+
+            <div class="menu-section">
+              <div class="label">— Contact —</div>
+
+              <a href="https://x.com/BiggeeSmols" class="menu-link" target="_blank">
+                @BiggeeSmols — X/TWITTER
+                <span class="link-key">MSG</span>
+              </a>
+            </div>
+
+            <div class="status-bar">
+              <span class="status-online">CONNECTED</span>
+              <span id="clock">00:00:00</span>
+              <span>BOCA RATON, FL</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="site-footer">ALL SYSTEMS NOMINAL</div>
+
+</div>
+
+<script>
+// ── MATRIX RAIN ──
+(function() {
+  const canvas = document.getElementById('matrix-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF:.∴∵∶∷';
+  const fontSize = 14;
+  let columns = Math.floor(canvas.width / fontSize);
+  let drops = Array(columns).fill(1);
+
+  window.addEventListener('resize', () => {
+    columns = Math.floor(canvas.width / fontSize);
+    drops = Array(columns).fill(1);
+  });
+
+  function draw() {
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.06)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#00ff41';
+    ctx.font = fontSize + 'px monospace';
+
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      const x = i * fontSize;
+      const y = drops[i] * fontSize;
+
+      // Vary brightness
+      const brightness = Math.random();
+      if (brightness > 0.95) {
+        ctx.fillStyle = '#ffffff';
+      } else if (brightness > 0.7) {
+        ctx.fillStyle = '#00ff41';
+      } else {
+        ctx.fillStyle = '#003b00';
+      }
+
+      ctx.fillText(text, x, y);
+
+      if (y > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+
+  setInterval(draw, 45);
+})();
+
+// ── BOOT SEQUENCE ──
+(function() {
+  const bootLines = [
+    'T44-BIOS v4.4.0 — INITIATING...',
+    'RAM CHECK ............ 44096K OK',
+    'LOADING NUMOGRAM SUBSYSTEM......',
+    'PANDEMONIUM MATRIX .... MAPPED',
+    'HYPERSTITION ENGINE ... ACTIVE',
+    'MEMEPLEX ARRAY ........ PRIMED',
+    'NEURAL MESH ........... SYNCED',
+    'EGRESS CHANNELS ....... OPEN',
+    '',
+    'ALL SYSTEMS NOMINAL.',
+    'SELECT PROGRAM TO EXECUTE.',
+  ];
+
+  const bootArea = document.getElementById('boot-area');
+  const menuArea = document.getElementById('menu-area');
+  let i = 0;
+
+  function addLine() {
+    if (i >= bootLines.length) {
+      setTimeout(() => {
+        bootArea.style.display = 'none';
+        menuArea.style.display = 'flex';
+        menuArea.style.flexDirection = 'column';
+        menuArea.style.flex = '1';
+      }, 400);
+      return;
+    }
+
+    const line = document.createElement('div');
+    line.className = 'boot-line';
+    line.textContent = bootLines[i];
+    line.style.animationDelay = '0s';
+    line.style.animationDuration = '0.05s';
+    bootArea.appendChild(line);
+    // Force reflow
+    line.offsetHeight;
+    line.style.opacity = '1';
+
+    i++;
+    setTimeout(addLine, 90 + Math.random() * 80);
+  }
+
+  setTimeout(addLine, 600);
+})();
+
+// ── CLOCK ──
+(function() {
+  const clockEl = document.getElementById('clock');
+  function tick() {
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+
+</body>
+</html>
