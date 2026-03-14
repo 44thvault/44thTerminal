@@ -265,17 +265,6 @@
     padding-left: 1.4rem;
   }
 
-  .menu-link .link-key {
-    color: #00ff41cc;
-    font-size: 0.65rem;
-    margin-left: 0.6rem;
-    opacity: 0.5;
-  }
-
-  .menu-link:hover .link-key {
-    opacity: 1;
-  }
-
   /* ── STATUS BAR ── */
   .status-bar {
     margin-top: auto;
@@ -387,14 +376,25 @@
   @media (max-width: 500px) {
     .cabinet {
       width: 95vw;
-      padding: 0.8rem;
+      padding: 0.6rem;
       border-radius: 12px 12px 6px 6px;
     }
+    .screen-bezel { padding: 6px; }
     .screen-content {
-      padding: 1rem;
-      min-height: 350px;
+      padding: 0.8rem;
+      min-height: 340px;
+      font-size: 0.7rem;
+    }
+    .menu-link {
+      font-size: 0.68rem;
+      padding: 0.4rem 0.5rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .site-title { letter-spacing: 0.15em; }
+    .marquee { font-size: 0.6rem; letter-spacing: 0.2em; padding: 0.4rem 0.5rem; }
+    .status-bar { font-size: 0.55rem; }
   }
 </style>
 </head>
@@ -427,37 +427,30 @@
 
               <a href="https://www.playdecadence.online/" class="menu-link" target="_blank">
                 DECADENCE — Pandemonium Card Engine
-                <span class="link-key">PLAY</span>
               </a>
 
               <a href="https://ichingv2.vercel.app/" class="menu-link" target="_blank">
                 I CHING — Divination Oracle
-                <span class="link-key">CAST</span>
               </a>
 
               <a href="https://apocalypse-nine.vercel.app/" class="menu-link" target="_blank">
                 APOCALYPSE SIMULATOR
-                <span class="link-key">RUN</span>
               </a>
 
               <a href="https://kataleimma.vercel.app/" class="menu-link" target="_blank">
                 KATALEIMMA — Sensory Residue System
-                <span class="link-key">OPEN</span>
               </a>
 
               <a href="https://archetypal-tarot.vercel.app/" class="menu-link" target="_blank">
                 ARCHETYPAL TAROT — Shadow Oracle
-                <span class="link-key">DRAW</span>
               </a>
 
               <a href="https://memesim.vercel.app/" class="menu-link" target="_blank">
                 MEMEPLEX SIMULATOR — Agent Contagion
-                <span class="link-key">RUN</span>
               </a>
 
               <a href="https://saturnsimulator.vercel.app/" class="menu-link" target="_blank">
                 SATURN SIMULATOR
-                <span class="link-key">RUN</span>
               </a>
             </div>
 
@@ -466,7 +459,6 @@
 
               <a href="https://x.com/BiggeeSmols" class="menu-link" target="_blank">
                 @BiggeeSmols — X/TWITTER
-                <span class="link-key">MSG</span>
               </a>
             </div>
 
